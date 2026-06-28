@@ -1,0 +1,106 @@
+/* ============================================================
+   Buttons — Aura & Bel
+   Quiet, editorial. The boldness lives in the photography, not here.
+   ============================================================ */
+
+.btn {
+  --btn-fg: var(--paper);
+  --btn-bg: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  padding: 0.95em 1.7em;
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color var(--dur-fast) var(--ease-soft),
+    transform var(--dur-fast) var(--ease);
+}
+
+/* Ink wash that fills from the bottom on hover */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--gold);
+  transform: translateY(100%);
+  transition: transform var(--dur) var(--ease);
+}
+
+.btn:hover {
+  color: var(--ink);
+}
+
+.btn:hover::after {
+  transform: translateY(0);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Outline variant — for secondary actions on light ground */
+.btn--ghost {
+  --btn-fg: var(--ink);
+  --btn-bg: transparent;
+  border: 1px solid var(--line);
+}
+
+.btn--ghost::after {
+  background: var(--rose-soft);
+}
+
+.btn--ghost:hover {
+  color: var(--ink);
+  border-color: var(--rose);
+}
+
+/* Rose-accented variant */
+.btn--rose::after {
+  background: var(--rose);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--sm {
+  padding: 0.7em 1.2em;
+  letter-spacing: 0.14em;
+}
+
+/* Text link with an animated underline */
+.link-underline {
+  position: relative;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding-bottom: 2px;
+}
+
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--dur) var(--ease);
+}
+
+.link-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
