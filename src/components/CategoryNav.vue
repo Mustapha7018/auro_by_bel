@@ -1,14 +1,29 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { catalogIndex } from '@/data/catalog'
 
 const active = ref(catalogIndex[0]?.id ?? '')
+const track = ref(null)
 let observer = null
 
 const go = (id) => {
   const el = document.getElementById(id)
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
+
+// Keep the active chip visible inside the (horizontally scrollable) tab bar,
+// so on small screens you always see which collection you're in.
+const centerActive = () => {
+  const t = track.value
+  if (!t) return
+  const chip = t.querySelector(`[data-id="${active.value}"]`)
+  if (!chip) return
+  const target = chip.offsetLeft - t.clientWidth / 2 + chip.offsetWidth / 2
+  const max = t.scrollWidth - t.clientWidth
+  t.scrollTo({ left: Math.max(0, Math.min(target, max)), behavior: 'smooth' })
+}
+
+watch(active, centerActive)
 
 onMounted(() => {
   observer = new IntersectionObserver(
@@ -30,13 +45,14 @@ onBeforeUnmount(() => observer && observer.disconnect())
 
 <template>
   <nav class="catnav" aria-label="Collections">
-    <div class="catnav__track">
+    <div ref="track" class="catnav__track">
       <button
         v-for="c in catalogIndex"
         :key="c.id"
         type="button"
         class="catnav__chip"
         :class="{ 'is-active': active === c.id }"
+        :data-id="c.id"
         @click="go(c.id)"
       >
         {{ c.name }}

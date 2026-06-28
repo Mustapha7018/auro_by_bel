@@ -11,14 +11,13 @@ import { currency } from '@/data/catalog'
  * mode: 'preorder' → customer pays `deposit` now, balance on fulfilment
  *       'full'     → customer pays `price` now
  */
-const fmt = new Intl.NumberFormat('en-GB', {
-  style: 'currency',
-  currency: currency.code,
+const fmt = new Intl.NumberFormat('en-GH', {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 })
 
-export const formatMoney = (value) => fmt.format(value)
+// e.g. ₵2,400
+export const formatMoney = (value) => `${currency.symbol}${fmt.format(value)}`
 
 const lineKey = (productId, mode, length) =>
   `${productId}::${mode}::${length || 'one-size'}`

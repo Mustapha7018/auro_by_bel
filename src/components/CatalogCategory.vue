@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import ProductCard from './ProductCard.vue'
 import CategoryFeature from './CategoryFeature.vue'
 
@@ -9,6 +9,16 @@ defineProps({
 })
 
 const track = ref(null)
+const atStart = ref(true)
+const atEnd = ref(false)
+
+const updateArrows = () => {
+  const el = track.value
+  if (!el) return
+  const max = el.scrollWidth - el.clientWidth
+  atStart.value = el.scrollLeft <= 1
+  atEnd.value = el.scrollLeft >= max - 1 // also true when nothing to scroll
+}
 
 const scrollRail = (dir) => {
   const el = track.value
@@ -21,6 +31,13 @@ const scrollRail = (dir) => {
 const toRail = () => {
   track.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
+
+onMounted(async () => {
+  await nextTick()
+  updateArrows()
+  window.addEventListener('resize', updateArrows)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateArrows))
 </script>
 
 <template>
@@ -36,12 +53,12 @@ const toRail = () => {
       <div class="rail-block__head shell">
         <h3 class="rail-block__title">All styles</h3>
         <div class="rail-block__arrows">
-          <button type="button" aria-label="Scroll left" @click="scrollRail(-1)">‹</button>
-          <button type="button" aria-label="Scroll right" @click="scrollRail(1)">›</button>
+          <button type="button" aria-label="Scroll left" :disabled="atStart" @click="scrollRail(-1)">‹</button>
+          <button type="button" aria-label="Scroll right" :disabled="atEnd" @click="scrollRail(1)">›</button>
         </div>
       </div>
 
-      <div ref="track" class="rail shell">
+      <div ref="track" class="rail shell" @scroll.passive="updateArrows">
         <div v-for="p in category.products" :key="p.id" class="rail__item">
           <ProductCard :product="p" :mode="category.mode" />
         </div>
@@ -97,13 +114,19 @@ const toRail = () => {
     transform var(--dur-fast) var(--ease);
 }
 
-.rail-block__arrows button:hover {
+.rail-block__arrows button:hover:not(:disabled) {
   background: var(--ink);
   color: var(--paper);
 }
 
-.rail-block__arrows button:active {
+.rail-block__arrows button:active:not(:disabled) {
   transform: scale(0.94);
+}
+
+.rail-block__arrows button:disabled {
+  border-color: var(--line);
+  color: var(--line);
+  cursor: not-allowed;
 }
 
 .rail {

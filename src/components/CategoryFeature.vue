@@ -69,16 +69,16 @@ const ctaLabel = computed(() =>
 .feature__media::before {
   content: '';
   position: absolute;
-  inset: auto -1.4rem -1.4rem auto;
-  width: 62%;
-  height: 62%;
+  inset: auto -0.6rem -1.1rem auto;
+  width: 60%;
+  height: 60%;
   border-radius: clamp(20px, 2.6vw, 34px);
   background: var(--gold-soft);
   z-index: -1;
 }
 
 .feature--flip .feature__media::before {
-  inset: auto auto -1.4rem -1.4rem;
+  inset: auto auto -1.1rem -0.6rem;
   background: var(--rose-soft);
 }
 

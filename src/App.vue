@@ -8,6 +8,7 @@ import CatalogCategory from '@/components/CatalogCategory.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import CartDrawer from '@/components/CartDrawer.vue'
 import ProductModal from '@/components/ProductModal.vue'
+import ScrollTop from '@/components/ScrollTop.vue'
 
 useReveal()
 </script>
@@ -28,4 +29,5 @@ useReveal()
   <SiteFooter />
   <ProductModal />
   <CartDrawer />
+  <ScrollTop />
 </template>
