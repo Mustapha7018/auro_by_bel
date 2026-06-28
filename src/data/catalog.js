@@ -193,6 +193,24 @@ const SHOP_CATEGORIES = new Set(['retail', 'wig-making'])
 catalog.forEach((c) => {
   c.banner = FEATURE[c.id] || '/images/img1.jpg'
   c.mode = SHOP_CATEGORIES.has(c.id) ? 'shop' : 'appointment'
+
+  // Each shop product is EITHER buyable now or pre-order — never both.
+  // Bel flips this `status` per product from the dashboard later.
+  if (c.mode === 'shop') {
+    c.products.forEach((p) => {
+      if (!p.status) {
+        p.status = p.stock === 'preorder-only' ? 'preorder' : 'instock'
+      }
+    })
+  }
 })
 
 export const catalogIndex = catalog.map((c) => ({ id: c.id, name: c.name, count: c.products.length }))
+
+/** Flat lookup of every product by id, tagged with its collection's mode. */
+export const productById = {}
+catalog.forEach((c) => {
+  c.products.forEach((p) => {
+    productById[p.id] = { ...p, mode: c.mode, categoryName: c.name }
+  })
+})

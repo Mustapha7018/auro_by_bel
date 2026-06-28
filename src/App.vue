@@ -9,6 +9,8 @@ import SiteFooter from '@/components/SiteFooter.vue'
 import CartDrawer from '@/components/CartDrawer.vue'
 import ProductModal from '@/components/ProductModal.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
+import AuthModal from '@/components/AuthModal.vue'
+import ProfileDrawer from '@/components/ProfileDrawer.vue'
 
 useReveal()
 </script>
@@ -29,5 +31,7 @@ useReveal()
   <SiteFooter />
   <ProductModal />
   <CartDrawer />
+  <ProfileDrawer />
+  <AuthModal />
   <ScrollTop />
 </template>

@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useCartStore } from '@/store/cart'
+import { useAuthStore } from '@/store/auth'
 
 const cart = useCartStore()
+const auth = useAuthStore()
 
 const scrolled = ref(false)
 const onScroll = () => {
@@ -25,17 +27,37 @@ const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
         Aura <span class="nav__brand-by">by</span> Bel
       </button>
 
-      <button
-        class="nav__cart"
-        type="button"
-        @click="cart.open()"
-        :aria-label="`Open bag, ${cart.count} item${cart.count === 1 ? '' : 's'}`"
-      >
-        <span>Bag</span>
-        <span class="nav__cart-count" :class="{ 'is-active': cart.count > 0 }">{{
-          cart.count
-        }}</span>
-      </button>
+      <div class="nav__actions">
+        <button
+          class="nav__cart"
+          type="button"
+          @click="cart.open()"
+          :aria-label="`Open bag, ${cart.count} item${cart.count === 1 ? '' : 's'}`"
+        >
+          <span>Bag</span>
+          <span class="nav__cart-count" :class="{ 'is-active': cart.count > 0 }">{{
+            cart.count
+          }}</span>
+        </button>
+
+        <button
+          v-if="auth.isAuthed"
+          class="nav__avatar"
+          type="button"
+          aria-label="Open your profile"
+          @click="auth.openProfile()"
+        >
+          {{ auth.initials }}
+        </button>
+        <button
+          v-else
+          class="nav__signin"
+          type="button"
+          @click="auth.openPrompt()"
+        >
+          Sign in
+        </button>
+      </div>
     </div>
   </header>
 </template>
@@ -81,6 +103,12 @@ const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
   margin: 0 0.1em;
 }
 
+.nav__actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.85rem, 2vw, 1.4rem);
+}
+
 .nav__cart {
   display: inline-flex;
   align-items: center;
@@ -89,6 +117,38 @@ const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.nav__signin {
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.nav__signin:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.nav__avatar {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: grid;
+  place-items: center;
+  transition: transform var(--dur-fast) var(--ease);
+}
+.nav__avatar:hover {
+  transform: scale(1.06);
 }
 
 .nav__cart-count {

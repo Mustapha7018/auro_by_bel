@@ -3,6 +3,8 @@ import { ref, watch, computed } from 'vue'
 import BookingCalendar from './BookingCalendar.vue'
 import { useViewStore } from '@/store/view'
 import { useCartStore, formatMoney } from '@/store/cart'
+import { useAuthStore } from '@/store/auth'
+import { useAccountStore } from '@/store/account'
 import {
   availableDates,
   slotsForDate,
@@ -12,6 +14,8 @@ import {
 
 const view = useViewStore()
 const cart = useCartStore()
+const auth = useAuthStore()
+const account = useAccountStore()
 
 const isAppointment = computed(() => view.mode === 'appointment')
 
@@ -20,7 +24,8 @@ const option = ref(null)
 const qty = ref(1)
 const imgLoaded = ref(false)
 const imgFailed = ref(false)
-const preorderOnly = computed(() => view.product?.stock === 'preorder-only')
+// A shop product is either buyable now or pre-order — never both.
+const isPreorder = computed(() => view.product?.status === 'preorder')
 
 /* ---- appointment state ----------------------------------------- */
 const apptDate = ref(null) // a Date chosen in the calendar
@@ -75,12 +80,21 @@ const inc = () => {
 }
 
 const addTo = (mode) => {
+  if (!auth.require(() => addTo(mode))) return
   cart.add({ product: view.product, mode, length: option.value, qty: qty.value })
   view.close() // cart drawer opens itself
 }
 
 const confirmBooking = () => {
-  if (selectedTime.value) requested.value = true
+  if (!selectedTime.value) return
+  if (!auth.require(() => confirmBooking())) return
+  account.addBooking({
+    service: view.product.name,
+    date: selectedDate.value?.full,
+    time: selectedTimeLabel.value,
+    deposit: view.product.deposit,
+  })
+  requested.value = true
 }
 
 const onKey = (e) => {
@@ -157,20 +171,16 @@ const onKey = (e) => {
             </div>
 
             <div class="modal__actions">
-              <button v-if="!preorderOnly" class="btn btn--block" type="button" @click="addTo('full')">
-                Add to bag · {{ formatMoney(view.product.price * qty) }}
-              </button>
-              <button class="btn btn--ghost btn--block" type="button" @click="addTo('preorder')">
+              <button v-if="isPreorder" class="btn btn--block" type="button" @click="addTo('preorder')">
                 Pre-order with {{ formatMoney(view.product.deposit * qty) }} deposit
+              </button>
+              <button v-else class="btn btn--block" type="button" @click="addTo('full')">
+                Add to bag · {{ formatMoney(view.product.price * qty) }}
               </button>
             </div>
 
-            <p class="modal__note">
-              {{
-                preorderOnly
-                  ? 'Made to order — deposit secures your place, balance due on completion.'
-                  : 'Reserve with a deposit or pay in full today. Balance settled on fulfilment.'
-              }}
+            <p v-if="isPreorder" class="modal__note">
+              Made to order — deposit secures your place, balance due on completion.
             </p>
           </div>
         </template>

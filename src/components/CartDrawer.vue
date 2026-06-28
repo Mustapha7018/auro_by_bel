@@ -1,16 +1,42 @@
 <script setup>
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useCartStore, formatMoney } from '@/store/cart'
+import { useAuthStore } from '@/store/auth'
+import { useAccountStore } from '@/store/account'
 
 const cart = useCartStore()
+const auth = useAuthStore()
+const account = useAccountStore()
 
-// Lock body scroll while the drawer is open.
+const placed = ref(false)
+
+// Lock body scroll while the drawer is open; reset the confirmation each open.
 watch(
   () => cart.isOpen,
   (open) => {
     document.body.style.overflow = open ? 'hidden' : ''
+    if (open) placed.value = false
   },
 )
+
+const checkout = () => {
+  if (cart.isEmpty) return
+  if (!auth.require(() => checkout())) return
+  account.placeOrder({
+    items: cart.lines.map((l) => ({
+      name: l.name,
+      mode: l.mode,
+      length: l.length,
+      qty: l.qty,
+      price: l.price,
+      deposit: l.deposit,
+    })),
+    dueToday: cart.dueToday,
+    balanceLater: cart.balanceLater,
+  })
+  cart.clear()
+  placed.value = true
+}
 
 const onKey = (e) => {
   if (e.key === 'Escape') cart.close()
@@ -47,7 +73,18 @@ const onKey = (e) => {
           </button>
         </header>
 
-        <div v-if="cart.isEmpty" class="drawer__empty">
+        <div v-if="placed" class="drawer__empty">
+          <p class="drawer__empty-mark">✓</p>
+          <p>Order placed.</p>
+          <p class="drawer__empty-sub">
+            Thank you — it's saved to your profile, and we'll confirm by message.
+          </p>
+          <button class="btn btn--ghost btn--sm" type="button" @click="cart.close()">
+            Continue browsing
+          </button>
+        </div>
+
+        <div v-else-if="cart.isEmpty" class="drawer__empty">
           <p class="drawer__empty-mark">A · B</p>
           <p>Your bag is empty.</p>
           <p class="drawer__empty-sub">
@@ -108,11 +145,11 @@ const onKey = (e) => {
               <span>{{ formatMoney(cart.balanceLater) }}</span>
             </div>
           </div>
-          <button class="btn btn--block" type="button">
+          <button class="btn btn--block" type="button" @click="checkout">
             Checkout — {{ formatMoney(cart.dueToday) }}
           </button>
           <p class="drawer__fineprint">
-            Secure checkout connects to your store once the backend is live.
+            Secure payment connects to your store once the backend is live.
           </p>
         </footer>
       </aside>
