@@ -167,8 +167,14 @@ const onKey = (e) => {
             </div>
           </div>
           <label v-if="needPhone" class="drawer__phone">
-            <span>Phone</span>
-            <input v-model="phone" type="tel" placeholder="So we can reach you about your order" />
+            <span>Phone <em class="req">required</em></span>
+            <input
+              v-model="phone"
+              type="tel"
+              required
+              :class="{ 'is-invalid': error && !phone.trim() }"
+              placeholder="So we can reach you about your order"
+            />
           </label>
           <button class="btn btn--block" type="button" :disabled="busy" @click="checkout">
             {{ busy ? 'Placing order…' : `Checkout — ${formatMoney(cart.dueToday)}` }}
@@ -416,6 +422,16 @@ const onKey = (e) => {
 .drawer__phone input:focus {
   outline: none;
   border-color: var(--gold);
+}
+.drawer__phone input.is-invalid {
+  border-color: var(--rose);
+}
+.drawer__phone .req {
+  font-style: normal;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: var(--rose);
+  margin-left: 0.4rem;
 }
 
 .drawer__row {

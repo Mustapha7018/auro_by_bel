@@ -258,8 +258,15 @@ const onKey = (e) => {
               </div>
 
               <div v-if="needPhone" class="appt__phone">
-                <span class="modal__label">Phone</span>
-                <input v-model="phone" type="tel" class="appt__phone-input" placeholder="So Bel can confirm" />
+                <span class="modal__label">Phone <em class="req">required</em></span>
+                <input
+                  v-model="phone"
+                  type="tel"
+                  class="appt__phone-input"
+                  :class="{ 'is-invalid': bookingError && !phone.trim() }"
+                  required
+                  placeholder="So Bel can confirm your appointment"
+                />
               </div>
 
               <button
@@ -504,6 +511,16 @@ const onKey = (e) => {
 .appt__phone-input:focus {
   outline: none;
   border-color: var(--gold);
+}
+.appt__phone-input.is-invalid {
+  border-color: var(--rose);
+}
+.req {
+  font-style: normal;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: var(--rose);
+  margin-left: 0.4rem;
 }
 
 .appt__col--time .modal__note {
