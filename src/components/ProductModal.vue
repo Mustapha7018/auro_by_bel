@@ -208,7 +208,7 @@ const onKey = (e) => {
             </div>
 
             <p v-if="isPreorder" class="modal__note">
-              Made to order — deposit secures your place, balance due on completion.
+              Made to order — a one-third deposit secures your place, balance due on completion.
             </p>
           </div>
         </template>
