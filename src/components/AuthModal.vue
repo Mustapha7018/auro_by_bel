@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/store/auth'
 
 const auth = useAuthStore()
@@ -7,6 +7,37 @@ const auth = useAuthStore()
 const name = ref('')
 const email = ref('')
 const password = ref('')
+
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const googleBtn = ref(null)
+
+async function onGoogle(resp) {
+  if (resp && resp.credential) await auth.loginWithGoogle(resp.credential)
+}
+
+function renderGoogle() {
+  const g = window.google
+  if (!CLIENT_ID || !googleBtn.value || !g?.accounts?.id) return false
+  g.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogle })
+  googleBtn.value.innerHTML = ''
+  g.accounts.id.renderButton(googleBtn.value, {
+    theme: 'outline',
+    size: 'large',
+    text: 'continue_with',
+    width: 300,
+    logo_alignment: 'center',
+  })
+  return true
+}
+
+// GSI script may still be loading — retry briefly.
+function ensureGoogle() {
+  if (renderGoogle()) return
+  let tries = 0
+  const t = setInterval(() => {
+    if (renderGoogle() || ++tries > 40) clearInterval(t)
+  }, 100)
+}
 
 watch(
   () => auth.promptOpen,
@@ -16,6 +47,7 @@ watch(
       name.value = ''
       email.value = ''
       password.value = ''
+      if (CLIENT_ID) nextTick(ensureGoogle)
     }
   },
 )
@@ -52,6 +84,11 @@ const onKey = (e) => {
 
         <p class="auth__brand">Aura <span>by</span> Bel</p>
         <h2 class="auth__title">{{ auth.mode === 'register' ? 'Create your account' : 'Sign in to continue' }}</h2>
+
+        <div v-if="CLIENT_ID" class="auth__google">
+          <div ref="googleBtn"></div>
+        </div>
+        <div v-if="CLIENT_ID" class="auth__or"><span>or with email</span></div>
 
         <form class="auth__form" @submit.prevent="submit">
           <label v-if="auth.mode === 'register'" class="auth__field">
@@ -149,6 +186,31 @@ const onKey = (e) => {
   font-size: var(--step-1);
   white-space: nowrap;
   margin: 0.8rem 0 1.4rem;
+}
+
+.auth__google {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+  margin-bottom: 1rem;
+}
+
+.auth__or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.auth__or::before,
+.auth__or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 
 .auth__form {

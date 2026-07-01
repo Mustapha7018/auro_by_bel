@@ -50,6 +50,7 @@ export const api = {
   // auth
   register: (body) => request('/auth/register', { method: 'POST', body }),
   login: (body) => request('/auth/login', { method: 'POST', body }),
+  google: (credential) => request('/auth/google', { method: 'POST', body: { credential } }),
   me: () => request('/auth/me', { auth: true }),
 
   // customer account

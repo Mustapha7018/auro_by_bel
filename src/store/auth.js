@@ -66,6 +66,9 @@ export const useAuthStore = defineStore('auth', {
     async register(name, email, password) {
       return this._authenticate(() => api.register({ name, email, password }))
     },
+    async loginWithGoogle(credential) {
+      return this._authenticate(() => api.google(credential))
+    },
 
     async _authenticate(call) {
       this.busy = true
