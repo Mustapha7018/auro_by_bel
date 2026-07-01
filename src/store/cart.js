@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { currency } from '@/data/catalog'
+
+const currency = { code: 'GHS', symbol: '₵' }
 
 /**
  * Cart store.

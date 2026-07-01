@@ -9,33 +9,45 @@ const auth = useAuthStore()
 const account = useAccountStore()
 
 const placed = ref(false)
+const busy = ref(false)
+const error = ref('')
 
 // Lock body scroll while the drawer is open; reset the confirmation each open.
 watch(
   () => cart.isOpen,
   (open) => {
     document.body.style.overflow = open ? 'hidden' : ''
-    if (open) placed.value = false
+    if (open) {
+      placed.value = false
+      error.value = ''
+    }
   },
 )
 
-const checkout = () => {
-  if (cart.isEmpty) return
+const checkout = async () => {
+  if (cart.isEmpty || busy.value) return
   if (!auth.require(() => checkout())) return
-  account.placeOrder({
-    items: cart.lines.map((l) => ({
-      name: l.name,
-      mode: l.mode,
-      length: l.length,
-      qty: l.qty,
-      price: l.price,
-      deposit: l.deposit,
-    })),
-    dueToday: cart.dueToday,
-    balanceLater: cart.balanceLater,
-  })
-  cart.clear()
-  placed.value = true
+  busy.value = true
+  error.value = ''
+  try {
+    await account.checkout(
+      cart.lines.map((l) => ({
+        product_id: l.productId,
+        name: l.name,
+        mode: l.mode,
+        length: l.length,
+        qty: l.qty,
+        price: l.price,
+        deposit: l.deposit,
+      })),
+    )
+    cart.clear()
+    placed.value = true
+  } catch (e) {
+    error.value = e.message || 'Checkout failed. Please try again.'
+  } finally {
+    busy.value = false
+  }
 }
 
 const onKey = (e) => {
@@ -145,11 +157,12 @@ const onKey = (e) => {
               <span>{{ formatMoney(cart.balanceLater) }}</span>
             </div>
           </div>
-          <button class="btn btn--block" type="button" @click="checkout">
-            Checkout — {{ formatMoney(cart.dueToday) }}
+          <button class="btn btn--block" type="button" :disabled="busy" @click="checkout">
+            {{ busy ? 'Placing order…' : `Checkout — ${formatMoney(cart.dueToday)}` }}
           </button>
-          <p class="drawer__fineprint">
-            Secure payment connects to your store once the backend is live.
+          <p v-if="error" class="drawer__fineprint" style="color: var(--rose)">{{ error }}</p>
+          <p v-else class="drawer__fineprint">
+            Deposits secure pre-orders; balance settled on fulfilment.
           </p>
         </footer>
       </aside>

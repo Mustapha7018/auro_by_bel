@@ -1,27 +1,16 @@
 import { defineStore } from 'pinia'
+import { api } from '@/lib/api'
 
 /**
- * The signed-in customer's saved data: favourites, appointment requests,
- * and placed orders. Persisted locally for now; a backend can hydrate this
- * the same shape later.
+ * The signed-in customer's data, backed by the API:
+ * favourites (product ids), bookings, and orders.
  */
-const KEY = 'aurabel.account'
-
-const load = () => {
-  try {
-    return JSON.parse(localStorage.getItem(KEY)) || {}
-  } catch {
-    return {}
-  }
-}
-
-const saved = load()
-
 export const useAccountStore = defineStore('account', {
   state: () => ({
-    favorites: saved.favorites || [], // product ids
-    bookings: saved.bookings || [], // appointment requests
-    orders: saved.orders || [], // placed cart orders
+    favorites: [], // product ids
+    bookings: [],
+    orders: [],
+    loaded: false,
   }),
 
   getters: {
@@ -30,32 +19,63 @@ export const useAccountStore = defineStore('account', {
   },
 
   actions: {
-    _save() {
-      localStorage.setItem(
-        KEY,
-        JSON.stringify({
-          favorites: this.favorites,
-          bookings: this.bookings,
-          orders: this.orders,
-        }),
-      )
+    async loadAll() {
+      try {
+        const [favs, bookings, orders] = await Promise.all([
+          api.favorites(),
+          api.myBookings(),
+          api.myOrders(),
+        ])
+        this.favorites = favs.map((p) => p.id)
+        this.bookings = bookings
+        this.orders = orders
+        this.loaded = true
+      } catch {
+        /* not signed in / offline */
+      }
     },
 
-    toggleFavorite(id) {
-      const i = this.favorites.indexOf(id)
-      if (i >= 0) this.favorites.splice(i, 1)
-      else this.favorites.unshift(id)
-      this._save()
+    async toggleFavorite(id) {
+      const has = this.favorites.includes(id)
+      // optimistic update
+      if (has) this.favorites = this.favorites.filter((x) => x !== id)
+      else this.favorites = [id, ...this.favorites]
+      try {
+        if (has) await api.removeFavorite(id)
+        else await api.addFavorite(id)
+      } catch {
+        // revert on failure
+        if (has) this.favorites = [id, ...this.favorites]
+        else this.favorites = this.favorites.filter((x) => x !== id)
+      }
     },
 
-    addBooking(booking) {
-      this.bookings.unshift({ id: `bk_${Date.now()}`, ts: Date.now(), ...booking })
-      this._save()
+    async refreshOrders() {
+      try {
+        this.orders = await api.myOrders()
+      } catch {
+        /* ignore */
+      }
+    },
+    async refreshBookings() {
+      try {
+        this.bookings = await api.myBookings()
+      } catch {
+        /* ignore */
+      }
     },
 
-    placeOrder(order) {
-      this.orders.unshift({ id: `or_${Date.now()}`, ts: Date.now(), ...order })
-      this._save()
+    async checkout(items) {
+      const order = await api.checkout(items)
+      await this.refreshOrders()
+      return order
+    },
+
+    clear() {
+      this.favorites = []
+      this.bookings = []
+      this.orders = []
+      this.loaded = false
     },
   },
 })

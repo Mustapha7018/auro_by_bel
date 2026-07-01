@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { closedWeekDays, isFullyBooked } from '@/data/availability'
+import { useAvailabilityStore } from '@/store/availability'
+import { isoDate } from '@/lib/dates'
+
+const availability = useAvailabilityStore()
 
 /**
  * Minimal month calendar matching the studio's design. Lets the customer
@@ -48,13 +51,13 @@ const canNext = computed(() => view.value < maxView)
 
 const mk = (date, outside) => {
   const past = date < today
-  const closed = closedWeekDays.includes(date.getDay())
-  const full = isFullyBooked(date)
+  const closed = !availability.workingDays.includes(date.getDay())
+  const blocked = availability.blockedDates.includes(isoDate(date))
   return {
     date,
     day: date.getDate(),
     outside,
-    disabled: outside || past || closed || full,
+    disabled: outside || past || closed || blocked,
     isToday: !outside && sameDay(date, today),
     isSelected: !outside && sameDay(date, props.modelValue),
   }

@@ -1,8 +1,10 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { catalogIndex } from '@/data/catalog'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useCatalogStore } from '@/store/catalog'
 
-const active = ref(catalogIndex[0]?.id ?? '')
+const catalog = useCatalogStore()
+const catalogIndex = computed(() => catalog.index)
+const active = ref(catalog.index[0]?.id ?? '')
 const track = ref(null)
 let observer = null
 
@@ -34,7 +36,7 @@ onMounted(() => {
     },
     { rootMargin: '-45% 0px -50% 0px', threshold: 0 },
   )
-  catalogIndex.forEach((c) => {
+  catalogIndex.value.forEach((c) => {
     const el = document.getElementById(c.id)
     if (el) observer.observe(el)
   })

@@ -3,12 +3,14 @@ import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useAccountStore } from '@/store/account'
 import { useViewStore } from '@/store/view'
+import { useCatalogStore } from '@/store/catalog'
 import { formatMoney } from '@/store/cart'
-import { productById } from '@/data/catalog'
 
 const auth = useAuthStore()
 const account = useAccountStore()
 const view = useViewStore()
+const catalog = useCatalogStore()
+const productById = computed(() => catalog.productById)
 
 const tab = ref('orders')
 const tabs = [
@@ -18,7 +20,7 @@ const tabs = [
 ]
 
 const favoriteProducts = computed(() =>
-  account.favorites.map((id) => productById[id]).filter(Boolean),
+  account.favorites.map((id) => productById.value[id]).filter(Boolean),
 )
 
 watch(
@@ -32,7 +34,7 @@ const fmtDate = (ts) =>
   new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
 const openProduct = (id) => {
-  const p = productById[id]
+  const p = productById.value[id]
   if (!p) return
   auth.closeProfile()
   view.open(p, p.mode)
@@ -93,8 +95,8 @@ const onKey = (e) => {
             <p v-if="!account.orders.length" class="prof__empty">No orders yet.</p>
             <article v-for="o in account.orders" :key="o.id" class="ord">
               <div class="ord__top">
-                <span class="ord__date">{{ fmtDate(o.ts) }}</span>
-                <span class="ord__total">{{ formatMoney(o.dueToday) }} paid</span>
+                <span class="ord__date">{{ fmtDate(o.createdAt) }}</span>
+                <span class="ord__total">{{ formatMoney(o.paid) }} paid</span>
               </div>
               <ul class="ord__items">
                 <li v-for="(it, i) in o.items" :key="i">
@@ -102,8 +104,8 @@ const onKey = (e) => {
                   <span class="ord__tag" :class="it.mode">{{ it.mode === 'preorder' ? 'Pre-order' : 'Purchase' }}</span>
                 </li>
               </ul>
-              <p v-if="o.balanceLater > 0" class="ord__balance">
-                Balance on fulfilment: {{ formatMoney(o.balanceLater) }}
+              <p v-if="o.balance > 0" class="ord__balance">
+                Balance on fulfilment: {{ formatMoney(o.balance) }}
               </p>
             </article>
           </template>
@@ -113,8 +115,8 @@ const onKey = (e) => {
             <p v-if="!account.bookings.length" class="prof__empty">No appointments yet.</p>
             <article v-for="b in account.bookings" :key="b.id" class="appt">
               <p class="appt__svc">{{ b.service }}</p>
-              <p class="appt__when">{{ b.date }} · {{ b.time }}</p>
-              <p class="appt__meta">Requested {{ fmtDate(b.ts) }} · {{ formatMoney(b.deposit) }} deposit on confirmation</p>
+              <p class="appt__when">{{ fmtDate(b.date) }} · {{ b.time }} · <span style="text-transform: capitalize">{{ b.status }}</span></p>
+              <p class="appt__meta">{{ formatMoney(b.deposit) }} deposit on confirmation</p>
             </article>
           </template>
 

@@ -5,17 +5,15 @@ import { useViewStore } from '@/store/view'
 import { useCartStore, formatMoney } from '@/store/cart'
 import { useAuthStore } from '@/store/auth'
 import { useAccountStore } from '@/store/account'
-import {
-  availableDates,
-  slotsForDate,
-  dateKey,
-  formatDate,
-} from '@/data/availability'
+import { useAvailabilityStore } from '@/store/availability'
+import { api } from '@/lib/api'
+import { isoDate, formatDate, firstBookableDate } from '@/lib/dates'
 
 const view = useViewStore()
 const cart = useCartStore()
 const auth = useAuthStore()
 const account = useAccountStore()
+const availability = useAvailabilityStore()
 
 const isAppointment = computed(() => view.mode === 'appointment')
 
@@ -29,22 +27,30 @@ const isPreorder = computed(() => view.product?.status === 'preorder')
 
 /* ---- appointment state ----------------------------------------- */
 const apptDate = ref(null) // a Date chosen in the calendar
+const slots = ref([])
+const slotsLoading = ref(false)
 const selectedTime = ref(null)
 const requested = ref(false)
+const bookingBusy = ref(false)
+const bookingError = ref('')
 
-const selectedKey = computed(() =>
-  apptDate.value ? dateKey(apptDate.value) : null,
-)
-const selectedDate = computed(() =>
-  apptDate.value ? formatDate(apptDate.value) : null,
-)
-const slots = computed(() =>
-  selectedKey.value ? slotsForDate(selectedKey.value) : [],
-)
-const selectedTimeLabel = computed(
-  () => slots.value.find((s) => s.time === selectedTime.value)?.label || '',
-)
+const selectedDate = computed(() => (apptDate.value ? formatDate(apptDate.value) : null))
 const hasOpenings = computed(() => slots.value.some((s) => s.available))
+
+async function loadSlots() {
+  if (!apptDate.value) {
+    slots.value = []
+    return
+  }
+  slotsLoading.value = true
+  try {
+    slots.value = await availability.slots(isoDate(apptDate.value))
+  } catch {
+    slots.value = []
+  } finally {
+    slotsLoading.value = false
+  }
+}
 
 // Reset everything whenever a new product opens.
 watch(
@@ -56,10 +62,11 @@ watch(
     imgFailed.value = false
     requested.value = false
     selectedTime.value = null
+    bookingError.value = ''
+    slots.value = []
     if (p && isAppointment.value) {
-      // default to the next bookable working day
-      const first = availableDates(21).find((d) => !d.fullyBooked)
-      apptDate.value = first ? first.date : null
+      apptDate.value = firstBookableDate(availability.workingDays, availability.blockedDates)
+      loadSlots()
     } else {
       apptDate.value = null
     }
@@ -70,6 +77,7 @@ watch(
 const onDate = (d) => {
   apptDate.value = d
   selectedTime.value = null
+  loadSlots()
 }
 
 const dec = () => {
@@ -85,16 +93,27 @@ const addTo = (mode) => {
   view.close() // cart drawer opens itself
 }
 
-const confirmBooking = () => {
-  if (!selectedTime.value) return
+const confirmBooking = async () => {
+  if (!selectedTime.value || bookingBusy.value) return
   if (!auth.require(() => confirmBooking())) return
-  account.addBooking({
-    service: view.product.name,
-    date: selectedDate.value?.full,
-    time: selectedTimeLabel.value,
-    deposit: view.product.deposit,
-  })
-  requested.value = true
+  bookingBusy.value = true
+  bookingError.value = ''
+  try {
+    await api.createBooking({
+      product_id: view.product.id,
+      service: view.product.name,
+      date: isoDate(apptDate.value),
+      time: selectedTime.value,
+      deposit: view.product.deposit,
+    })
+    account.refreshBookings()
+    requested.value = true
+  } catch (e) {
+    bookingError.value = e.message || 'Could not book that slot. Try another time.'
+    loadSlots() // someone may have taken it
+  } finally {
+    bookingBusy.value = false
+  }
 }
 
 const onKey = (e) => {
@@ -212,7 +231,8 @@ const onKey = (e) => {
                 Available times<template v-if="selectedDate"> · {{ selectedDate.full }}</template>
               </span>
               <div class="times-wrap">
-                <div v-if="hasOpenings" class="times">
+                <p v-if="slotsLoading" class="modal__soldout">Loading times…</p>
+                <div v-else-if="hasOpenings" class="times">
                   <button
                     v-for="s in slots"
                     :key="s.time"
@@ -231,11 +251,12 @@ const onKey = (e) => {
               <button
                 class="btn btn--block appt__cta"
                 type="button"
-                :disabled="!selectedTime"
+                :disabled="!selectedTime || bookingBusy"
                 @click="confirmBooking"
               >
-                Request appointment
+                {{ bookingBusy ? 'Requesting…' : 'Request appointment' }}
               </button>
+              <p v-if="bookingError" class="modal__soldout" style="color: var(--rose)">{{ bookingError }}</p>
               <p class="modal__note">Confirmed by message · no payment now.</p>
             </div>
           </div>
@@ -246,7 +267,7 @@ const onKey = (e) => {
             <h3 class="booked__h">Appointment requested</h3>
             <p class="booked__detail">
               {{ view.product.name }}<br />
-              <strong>{{ selectedDate?.full }} · {{ selectedTimeLabel }}</strong>
+              <strong>{{ selectedDate?.full }} · {{ selectedTime }}</strong>
             </p>
             <p class="booked__note">
               Bel will confirm your slot shortly. A {{ formatMoney(view.product.deposit) }}

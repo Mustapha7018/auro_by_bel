@@ -1,15 +1,32 @@
 <script setup>
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useAuthStore } from '@/store/auth'
 
 const auth = useAuthStore()
+
+const name = ref('')
+const email = ref('')
+const password = ref('')
 
 watch(
   () => auth.promptOpen,
   (open) => {
     document.body.style.overflow = open ? 'hidden' : ''
+    if (open) {
+      name.value = ''
+      email.value = ''
+      password.value = ''
+    }
   },
 )
+
+const submit = async () => {
+  if (auth.mode === 'register') {
+    await auth.register(name.value.trim(), email.value.trim(), password.value)
+  } else {
+    await auth.login(email.value.trim(), password.value)
+  }
+}
 
 const onKey = (e) => {
   if (e.key === 'Escape') auth.closePrompt()
@@ -34,17 +51,46 @@ const onKey = (e) => {
         <button class="auth__close" type="button" aria-label="Close" @click="auth.closePrompt()">✕</button>
 
         <p class="auth__brand">Aura <span>by</span> Bel</p>
-        <h2 class="auth__title">Sign in to continue</h2>
+        <h2 class="auth__title">{{ auth.mode === 'register' ? 'Create your account' : 'Sign in to continue' }}</h2>
 
-        <button class="gbtn" type="button" @click="auth.signInWithGoogle()">
-          <svg class="gbtn__g" viewBox="0 0 18 18" aria-hidden="true">
-            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z" />
-            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.34A9 9 0 0 0 9 18Z" />
-            <path fill="#FBBC05" d="M3.98 10.72a5.4 5.4 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.02-2.34Z" />
-            <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.94L3.98 7.28C4.68 5.16 6.66 3.58 9 3.58Z" />
-          </svg>
-          Continue with Google
-        </button>
+        <form class="auth__form" @submit.prevent="submit">
+          <label v-if="auth.mode === 'register'" class="auth__field">
+            <span>Name</span>
+            <input v-model="name" type="text" required autocomplete="name" placeholder="First & last" />
+          </label>
+          <label class="auth__field">
+            <span>Email</span>
+            <input v-model="email" type="email" required autocomplete="email" placeholder="you@email.com" />
+          </label>
+          <label class="auth__field">
+            <span>Password</span>
+            <input
+              v-model="password"
+              type="password"
+              required
+              minlength="6"
+              :autocomplete="auth.mode === 'register' ? 'new-password' : 'current-password'"
+              placeholder="••••••••"
+            />
+          </label>
+
+          <p v-if="auth.error" class="auth__error">{{ auth.error }}</p>
+
+          <button class="btn btn--block" type="submit" :disabled="auth.busy">
+            {{ auth.busy ? 'Please wait…' : auth.mode === 'register' ? 'Create account' : 'Sign in' }}
+          </button>
+        </form>
+
+        <p class="auth__switch">
+          <template v-if="auth.mode === 'register'">
+            Already have an account?
+            <button type="button" @click="auth.setMode('login')">Sign in</button>
+          </template>
+          <template v-else>
+            New here?
+            <button type="button" @click="auth.setMode('register')">Create an account</button>
+          </template>
+        </p>
       </div>
     </transition>
   </teleport>
@@ -102,32 +148,62 @@ const onKey = (e) => {
 .auth__title {
   font-size: var(--step-1);
   white-space: nowrap;
-  margin: 0.8rem 0 1.6rem;
+  margin: 0.8rem 0 1.4rem;
 }
 
-.gbtn {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
+.auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  text-align: left;
+}
+
+.auth__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.auth__field span {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.auth__field input {
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  color: var(--ink);
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.85rem 1rem;
-  font-size: var(--step-0);
-  font-weight: 500;
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+  transition: border-color var(--dur-fast);
+}
+.auth__field input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.auth__error {
+  color: var(--rose);
+  font-size: var(--step--1);
+  margin: -0.2rem 0 0.2rem;
+}
+
+.auth__form .btn {
+  margin-top: 0.4rem;
+}
+
+.auth__switch {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+  margin-top: 1.1rem;
+}
+.auth__switch button {
   color: var(--ink);
-  transition: border-color var(--dur-fast), background var(--dur-fast),
-    box-shadow var(--dur-fast);
-}
-.gbtn:hover {
-  border-color: var(--ink-soft);
-  box-shadow: var(--shadow-soft);
-}
-.gbtn__g {
-  width: 1.15rem;
-  height: 1.15rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .fade-enter-active,
