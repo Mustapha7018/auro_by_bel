@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useCartStore, formatMoney } from '@/store/cart'
 import { useAuthStore } from '@/store/auth'
 import { useAccountStore } from '@/store/account'
@@ -11,6 +11,8 @@ const account = useAccountStore()
 const placed = ref(false)
 const busy = ref(false)
 const error = ref('')
+const phone = ref('')
+const needPhone = computed(() => !auth.user?.phone)
 
 // Lock body scroll while the drawer is open; reset the confirmation each open.
 watch(
@@ -20,6 +22,7 @@ watch(
     if (open) {
       placed.value = false
       error.value = ''
+      phone.value = auth.user?.phone || ''
     }
   },
 )
@@ -27,6 +30,10 @@ watch(
 const checkout = async () => {
   if (cart.isEmpty || busy.value) return
   if (!auth.require(() => checkout())) return
+  if (needPhone.value && !phone.value.trim()) {
+    error.value = 'Add a phone number so we can reach you.'
+    return
+  }
   busy.value = true
   error.value = ''
   try {
@@ -40,7 +47,9 @@ const checkout = async () => {
         price: l.price,
         deposit: l.deposit,
       })),
+      phone.value.trim() || undefined,
     )
+    if (phone.value.trim() && auth.user) auth.user.phone = phone.value.trim()
     cart.clear()
     placed.value = true
   } catch (e) {
@@ -157,6 +166,10 @@ const onKey = (e) => {
               <span>{{ formatMoney(cart.balanceLater) }}</span>
             </div>
           </div>
+          <label v-if="needPhone" class="drawer__phone">
+            <span>Phone</span>
+            <input v-model="phone" type="tel" placeholder="So we can reach you about your order" />
+          </label>
           <button class="btn btn--block" type="button" :disabled="busy" @click="checkout">
             {{ busy ? 'Placing order…' : `Checkout — ${formatMoney(cart.dueToday)}` }}
           </button>
@@ -377,6 +390,32 @@ const onKey = (e) => {
 
 .drawer__totals {
   margin-bottom: var(--space-sm);
+}
+
+.drawer__phone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: var(--space-sm);
+}
+.drawer__phone span {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.drawer__phone input {
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.7rem;
+}
+.drawer__phone input:focus {
+  outline: none;
+  border-color: var(--gold);
 }
 
 .drawer__row {

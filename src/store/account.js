@@ -65,8 +65,8 @@ export const useAccountStore = defineStore('account', {
       }
     },
 
-    async checkout(items) {
-      const order = await api.checkout(items)
+    async checkout(items, phone) {
+      const order = await api.checkout(items, phone)
       await this.refreshOrders()
       return order
     },

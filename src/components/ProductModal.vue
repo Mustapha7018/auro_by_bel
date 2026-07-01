@@ -33,6 +33,8 @@ const selectedTime = ref(null)
 const requested = ref(false)
 const bookingBusy = ref(false)
 const bookingError = ref('')
+const phone = ref('')
+const needPhone = computed(() => !auth.user?.phone)
 
 const selectedDate = computed(() => (apptDate.value ? formatDate(apptDate.value) : null))
 const hasOpenings = computed(() => slots.value.some((s) => s.available))
@@ -63,6 +65,7 @@ watch(
     requested.value = false
     selectedTime.value = null
     bookingError.value = ''
+    phone.value = auth.user?.phone || ''
     slots.value = []
     if (p && isAppointment.value) {
       apptDate.value = firstBookableDate(availability.workingDays, availability.blockedDates)
@@ -96,6 +99,10 @@ const addTo = (mode) => {
 const confirmBooking = async () => {
   if (!selectedTime.value || bookingBusy.value) return
   if (!auth.require(() => confirmBooking())) return
+  if (needPhone.value && !phone.value.trim()) {
+    bookingError.value = 'Add a phone number so we can confirm.'
+    return
+  }
   bookingBusy.value = true
   bookingError.value = ''
   try {
@@ -105,7 +112,9 @@ const confirmBooking = async () => {
       date: isoDate(apptDate.value),
       time: selectedTime.value,
       deposit: view.product.deposit,
+      phone: phone.value.trim() || undefined,
     })
+    if (phone.value.trim() && auth.user) auth.user.phone = phone.value.trim()
     account.refreshBookings()
     requested.value = true
   } catch (e) {
@@ -246,6 +255,11 @@ const onKey = (e) => {
                   </button>
                 </div>
                 <p v-else class="modal__soldout">Fully booked this day — try another date.</p>
+              </div>
+
+              <div v-if="needPhone" class="appt__phone">
+                <span class="modal__label">Phone</span>
+                <input v-model="phone" type="tel" class="appt__phone-input" placeholder="So Bel can confirm" />
               </div>
 
               <button
@@ -471,6 +485,25 @@ const onKey = (e) => {
 
 .appt__cta {
   margin-top: auto;
+}
+
+.appt__phone {
+  margin: 0.9rem 0 0.6rem;
+}
+.appt__phone-input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  transition: border-color var(--dur-fast);
+}
+.appt__phone-input:focus {
+  outline: none;
+  border-color: var(--gold);
 }
 
 .appt__col--time .modal__note {

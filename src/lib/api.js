@@ -52,6 +52,7 @@ export const api = {
   login: (body) => request('/auth/login', { method: 'POST', body }),
   google: (credential) => request('/auth/google', { method: 'POST', body: { credential } }),
   me: () => request('/auth/me', { auth: true }),
+  updateMe: (body) => request('/me', { method: 'PATCH', body, auth: true }),
 
   // customer account
   favorites: () => request('/me/favorites', { auth: true }),
@@ -60,5 +61,5 @@ export const api = {
   myBookings: () => request('/me/bookings', { auth: true }),
   createBooking: (body) => request('/me/bookings', { method: 'POST', body, auth: true }),
   myOrders: () => request('/me/orders', { auth: true }),
-  checkout: (items) => request('/me/orders', { method: 'POST', body: { items }, auth: true }),
+  checkout: (items, phone) => request('/me/orders', { method: 'POST', body: { items, phone }, auth: true }),
 }

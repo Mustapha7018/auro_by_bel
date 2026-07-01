@@ -30,6 +30,26 @@ watch(
   },
 )
 
+const editingPhone = ref(false)
+const phoneInput = ref('')
+const savingPhone = ref(false)
+
+const startEditPhone = () => {
+  phoneInput.value = auth.user?.phone || ''
+  editingPhone.value = true
+}
+const savePhone = async () => {
+  savingPhone.value = true
+  try {
+    await auth.updateProfile({ phone: phoneInput.value.trim() })
+    editingPhone.value = false
+  } catch {
+    /* ignore */
+  } finally {
+    savingPhone.value = false
+  }
+}
+
 const fmtDate = (ts) =>
   new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -66,6 +86,16 @@ const onKey = (e) => {
             <div>
               <p class="prof__name">{{ auth.user.name }}</p>
               <p class="prof__email">{{ auth.user.email }}</p>
+              <p class="prof__phone">
+                <template v-if="!editingPhone">
+                  {{ auth.user.phone || 'No phone on file' }}
+                  <button type="button" class="prof__phone-edit" @click="startEditPhone">{{ auth.user.phone ? 'Edit' : 'Add' }}</button>
+                </template>
+                <template v-else>
+                  <input v-model="phoneInput" type="tel" class="prof__phone-input" placeholder="Phone" />
+                  <button type="button" class="prof__phone-edit" :disabled="savingPhone" @click="savePhone">Save</button>
+                </template>
+              </p>
             </div>
           </div>
           <button class="prof__close" type="button" aria-label="Close" @click="auth.closeProfile()">✕</button>
@@ -206,6 +236,33 @@ const onKey = (e) => {
 .prof__email {
   font-size: var(--step--1);
   color: var(--ink-faint);
+}
+.prof__phone {
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+  margin-top: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.prof__phone-edit {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--gold-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prof__phone-input {
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.2rem 0.4rem;
+  max-width: 9rem;
+}
+.prof__phone-input:focus {
+  outline: none;
+  border-color: var(--gold);
 }
 
 .prof__close {

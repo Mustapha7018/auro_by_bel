@@ -70,6 +70,11 @@ export const useAuthStore = defineStore('auth', {
       return this._authenticate(() => api.google(credential))
     },
 
+    async updateProfile(patch) {
+      this.user = await api.updateMe(patch)
+      return this.user
+    },
+
     async _authenticate(call) {
       this.busy = true
       this.error = ''
