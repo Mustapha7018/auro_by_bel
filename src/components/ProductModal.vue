@@ -25,6 +25,13 @@ const imgFailed = ref(false)
 // A shop product is either buyable now or pre-order — never both.
 const isPreorder = computed(() => view.product?.status === 'preorder')
 
+// In-stock items are capped at what's on hand; pre-orders are made to order.
+const stockLimited = computed(
+  () => view.product?.status === 'instock' && typeof view.product?.stock === 'number',
+)
+const maxQty = computed(() => (stockLimited.value ? view.product.stock : 20))
+const soldOut = computed(() => stockLimited.value && view.product.stock <= 0)
+
 /* ---- appointment state ----------------------------------------- */
 const apptDate = ref(null) // a Date chosen in the calendar
 const slots = ref([])
@@ -87,7 +94,7 @@ const dec = () => {
   if (qty.value > 1) qty.value -= 1
 }
 const inc = () => {
-  if (qty.value < 20) qty.value += 1
+  if (qty.value < maxQty.value) qty.value += 1
 }
 
 const addTo = (mode) => {
@@ -189,7 +196,17 @@ const onKey = (e) => {
               </div>
             </div>
 
-            <div class="modal__field">
+            <div v-if="!isPreorder" class="modal__field">
+              <span class="modal__label">
+                Quantity<template v-if="stockLimited && !soldOut"> · {{ view.product.stock }} available</template>
+              </span>
+              <div class="qty">
+                <button type="button" aria-label="Decrease quantity" @click="dec" :disabled="qty <= 1">−</button>
+                <span>{{ qty }}</span>
+                <button type="button" aria-label="Increase quantity" @click="inc" :disabled="qty >= maxQty">+</button>
+              </div>
+            </div>
+            <div v-else class="modal__field">
               <span class="modal__label">Quantity</span>
               <div class="qty">
                 <button type="button" aria-label="Decrease quantity" @click="dec" :disabled="qty <= 1">−</button>
@@ -201,6 +218,9 @@ const onKey = (e) => {
             <div class="modal__actions">
               <button v-if="isPreorder" class="btn btn--block" type="button" @click="addTo('preorder')">
                 Pre-order with {{ formatMoney(view.product.deposit * qty) }} deposit
+              </button>
+              <button v-else-if="soldOut" class="btn btn--block" type="button" disabled>
+                Out of stock
               </button>
               <button v-else class="btn btn--block" type="button" @click="addTo('full')">
                 Add to bag · {{ formatMoney(view.product.price * qty) }}

@@ -55,9 +55,14 @@ export const useCartStore = defineStore('cart', {
   actions: {
     add({ product, mode = 'full', length = null, qty = 1 }) {
       const key = lineKey(product.id, mode, length)
+      // in-stock items are capped at what's on hand; pre-orders are unlimited
+      const cap =
+        product.status === 'instock' && typeof product.stock === 'number'
+          ? product.stock
+          : Infinity
       const existing = this.items[key]
       if (existing) {
-        existing.qty += qty
+        existing.qty = Math.min(cap, existing.qty + qty)
       } else {
         this.items[key] = {
           key,
@@ -68,14 +73,18 @@ export const useCartStore = defineStore('cart', {
           length,
           price: product.price,
           deposit: product.deposit,
-          qty,
+          stock: product.status === 'instock' ? product.stock ?? null : null,
+          qty: Math.min(cap, qty),
         }
       }
       this.isOpen = true
     },
 
     increment(key) {
-      if (this.items[key]) this.items[key].qty += 1
+      const line = this.items[key]
+      if (!line) return
+      const cap = typeof line.stock === 'number' ? line.stock : Infinity
+      if (line.qty < cap) line.qty += 1
     },
 
     decrement(key) {
