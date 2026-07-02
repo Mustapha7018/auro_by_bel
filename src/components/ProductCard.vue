@@ -20,6 +20,9 @@ const open = () => view.open(props.product, props.mode)
 const onSale = computed(
   () => props.product.compareAt && props.product.compareAt > props.product.price,
 )
+const discountPct = computed(() =>
+  Math.round((1 - props.product.price / props.product.compareAt) * 100),
+)
 
 const faved = computed(() => account.isFavorite(props.product.id))
 const toggleFav = () => {
@@ -45,7 +48,10 @@ const toggleFav = () => {
 
     <button class="card__hit" type="button" @click="open" :aria-label="`View ${product.name}`">
       <div class="card__media">
-        <span v-if="product.badge" class="card__badge">{{ product.badge }}</span>
+        <div class="card__badges">
+          <span v-if="onSale" class="card__badge card__badge--sale">−{{ discountPct }}%</span>
+          <span v-if="product.badge" class="card__badge">{{ product.badge }}</span>
+        </div>
         <MediaFrame
           :src="product.image"
           :alt="product.alt"
@@ -125,11 +131,17 @@ const toggleFav = () => {
   border-radius: var(--radius-img);
 }
 
-.card__badge {
+.card__badges {
   position: absolute;
   z-index: 3;
   top: 0.7rem;
   left: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+.card__badge {
   background: var(--paper);
   color: var(--ink);
   font-size: 0.56rem;
@@ -138,6 +150,10 @@ const toggleFav = () => {
   text-transform: uppercase;
   padding: 0.35rem 0.55rem;
   box-shadow: var(--shadow-soft);
+}
+.card__badge--sale {
+  background: var(--sale);
+  color: #fff;
 }
 
 /* "View" pill fades in on hover */
