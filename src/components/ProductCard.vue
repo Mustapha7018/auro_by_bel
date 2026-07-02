@@ -62,7 +62,7 @@ const toggleFav = () => {
         <h3 class="card__name">{{ product.name }}</h3>
         <p class="card__price">
           <span v-if="onSale" class="card__price-old">{{ formatMoney(product.compareAt) }}</span>
-          {{ formatMoney(product.price) }}
+          <span :class="{ 'card__price-sale': onSale }">{{ formatMoney(product.price) }}</span>
         </p>
       </div>
     </button>
@@ -193,5 +193,8 @@ const toggleFav = () => {
   color: var(--ink-faint);
   text-decoration: line-through;
   margin-right: 0.35rem;
+}
+.card__price-sale {
+  color: var(--sale);
 }
 </style>

@@ -451,7 +451,7 @@ const onKey = (e) => {
   margin-right: 0.4rem;
 }
 .modal__price-sale {
-  color: var(--rose);
+  color: var(--sale);
 }
 
 .modal__deposit {
