@@ -440,7 +440,7 @@ const onKey = (e) => {
 }
 
 .modal__price {
-  font-size: var(--step-1);
+  font-size: var(--step-0);
   font-weight: 600;
   margin-top: 0.5rem;
 }

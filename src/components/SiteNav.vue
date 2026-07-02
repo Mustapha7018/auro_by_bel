@@ -23,11 +23,13 @@ const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 <template>
   <header class="nav" :class="{ 'is-scrolled': scrolled }">
     <div class="nav__inner shell">
-      <button class="nav__brand" type="button" @click="toTop">
+      <RouterLink class="nav__brand" to="/" @click="toTop">
         Aura <span class="nav__brand-by">by</span> Bel
-      </button>
+      </RouterLink>
 
       <div class="nav__actions">
+        <RouterLink class="nav__link" to="/gallery">Gallery</RouterLink>
+
         <button
           class="nav__cart"
           type="button"
@@ -94,6 +96,26 @@ const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+}
+
+@media (max-width: 560px) {
+  .nav__brand {
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+  }
+}
+
+.nav__link {
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  transition: color var(--dur-fast);
+}
+.nav__link:hover,
+.nav__link.router-link-active {
+  color: var(--ink);
 }
 
 .nav__brand-by {

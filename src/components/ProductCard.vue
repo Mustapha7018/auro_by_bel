@@ -190,8 +190,7 @@ const toggleFav = () => {
   font-size: var(--step-0);
   font-weight: 500;
   line-height: 1.3;
-  /* keep card heights even regardless of 1- or 2-line names */
-  min-height: 2.6em;
+  /* allow up to two lines, but don't reserve the second when unused */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -202,7 +201,7 @@ const toggleFav = () => {
   font-size: var(--step-0);
   font-weight: 600;
   color: var(--ink);
-  margin-top: 0.25rem;
+  margin-top: 0.1rem;
 }
 .card__price-old {
   font-weight: 400;

@@ -44,6 +44,7 @@ export const api = {
 
   // public
   catalog: () => request('/catalog'),
+  gallery: () => request('/gallery'),
   availability: () => request('/availability'),
   slots: (dateIso) => request(`/bookings/slots?date=${dateIso}`),
 
