@@ -24,6 +24,9 @@ const imgLoaded = ref(false)
 const imgFailed = ref(false)
 // A shop product is either buyable now or pre-order — never both.
 const isPreorder = computed(() => view.product?.status === 'preorder')
+const onSale = computed(
+  () => view.product?.compareAt && view.product.compareAt > view.product.price,
+)
 
 // In-stock items are capped at what's on hand; pre-orders are made to order.
 const stockLimited = computed(
@@ -176,7 +179,10 @@ const onKey = (e) => {
           <div class="modal__body">
             <p class="modal__variant">{{ view.product.variant }}</p>
             <h2 class="modal__name">{{ view.product.name }}</h2>
-            <p class="modal__price">{{ formatMoney(view.product.price) }}</p>
+            <p class="modal__price">
+              <span v-if="onSale" class="modal__price-old">{{ formatMoney(view.product.compareAt) }}</span>
+              <span :class="{ 'modal__price-sale': onSale }">{{ formatMoney(view.product.price) }}</span>
+            </p>
             <p class="modal__desc">{{ view.product.alt }}</p>
 
             <div v-if="view.product.options" class="modal__field">
@@ -243,7 +249,9 @@ const onKey = (e) => {
               <p class="modal__variant">{{ view.product.variant }}</p>
               <h2 class="modal__name">{{ view.product.name }}</h2>
               <p class="modal__price">
-                From {{ formatMoney(view.product.price) }}
+                From
+                <span v-if="onSale" class="modal__price-old">{{ formatMoney(view.product.compareAt) }}</span>
+                <span :class="{ 'modal__price-sale': onSale }">{{ formatMoney(view.product.price) }}</span>
                 <span class="modal__deposit">· {{ formatMoney(view.product.deposit) }} deposit</span>
               </p>
             </div>
@@ -435,6 +443,15 @@ const onKey = (e) => {
   font-size: var(--step-1);
   font-weight: 600;
   margin-top: 0.5rem;
+}
+.modal__price-old {
+  font-weight: 400;
+  color: var(--ink-faint);
+  text-decoration: line-through;
+  margin-right: 0.4rem;
+}
+.modal__price-sale {
+  color: var(--rose);
 }
 
 .modal__deposit {
