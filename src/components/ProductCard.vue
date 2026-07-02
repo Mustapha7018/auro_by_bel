@@ -60,12 +60,9 @@ const toggleFav = () => {
 
       <div class="card__info">
         <h3 class="card__name">{{ product.name }}</h3>
-        <p class="card__meta">
-          <span class="card__price">
-            <span v-if="onSale" class="card__price-old">{{ formatMoney(product.compareAt) }}</span>
-            <span :class="{ 'card__price-sale': onSale }">{{ formatMoney(product.price) }}</span>
-          </span>
-          <span class="card__variant">{{ product.variant }}</span>
+        <p class="card__price">
+          <span v-if="onSale" class="card__price-old">{{ formatMoney(product.compareAt) }}</span>
+          {{ formatMoney(product.price) }}
         </p>
       </div>
     </button>
@@ -185,32 +182,16 @@ const toggleFav = () => {
   overflow: hidden;
 }
 
-.card__meta {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  margin-top: 0.25rem;
-}
-
 .card__price {
   font-size: var(--step-0);
   font-weight: 600;
+  color: var(--ink);
+  margin-top: 0.25rem;
 }
 .card__price-old {
   font-weight: 400;
   color: var(--ink-faint);
   text-decoration: line-through;
   margin-right: 0.35rem;
-}
-.card__price-sale {
-  color: var(--rose);
-}
-
-.card__variant {
-  font-size: var(--step--1);
-  color: var(--ink-faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 </style>
